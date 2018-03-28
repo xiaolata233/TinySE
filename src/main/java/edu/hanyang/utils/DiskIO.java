@@ -36,12 +36,12 @@ public class DiskIO {
 		
 		try {
 			for ( ; cnt<nelements; cnt++) {
-				readint++;
 				arr.get(cnt).setLeft(in.readInt());
 				readint++;
 				arr.get(cnt).setMiddle(in.readInt());
 				readint++;
 				arr.get(cnt).setRight(in.readInt());
+				readint++;
 			}
 		}
 		catch (EOFException e) {
