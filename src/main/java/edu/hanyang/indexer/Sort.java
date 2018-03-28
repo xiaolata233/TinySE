@@ -1,5 +1,7 @@
 package edu.hanyang.indexer;
 
+import java.io.IOException;
+
 public class Sort {
 	
 	private ExternalSort extsort = null;
@@ -11,11 +13,11 @@ public class Sort {
 		extsort = (ExternalSort) cls.newInstance();
 	}
 	
-	public void run (String infile, String outfile, String tmpdir, int blocksize, int nblocks) {
+	public void run (String infile, String outfile, String tmpdir, int blocksize, int nblocks) throws IOException {
 		extsort.sort(infile, outfile, tmpdir, blocksize, nblocks);
 	}
 
-	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public static void main(String[] args) throws ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
 		if (args.length != 5) {
 			System.err.print("usage: <inputfile> <outputfile> <temporary directory> <block size> <number of available blocks>");
 			System.exit(1);

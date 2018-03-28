@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -29,14 +30,24 @@ public class DiskIO {
 						buffersize));
 	}
 	
-	public static void read_array (DataInputStream in, 
-			long offset, int nelements, 
+	public static int read_array (DataInputStream in, int nelements, 
 			ArrayList<MutableTriple<Integer, Integer, Integer>> arr) throws IOException {
-		for (int i=0; i<nelements; i++) {
-			arr.get(i).setLeft(in.readInt());
-			arr.get(i).setMiddle(in.readInt());
-			arr.get(i).setRight(in.readInt());
+		int cnt = 0, readint = 0;
+		
+		try {
+			for ( ; cnt<nelements; cnt++) {
+				readint++;
+				arr.get(cnt).setLeft(in.readInt());
+				readint++;
+				arr.get(cnt).setMiddle(in.readInt());
+				readint++;
+				arr.get(cnt).setRight(in.readInt());
+			}
 		}
+		catch (EOFException e) {
+			assert(readint % 3 == 0);
+		}
+		return cnt;
 	}
 	
 	public static void sort_arr (List<MutableTriple<Integer, Integer, Integer>> arr, int nelements) {
@@ -49,5 +60,11 @@ public class DiskIO {
 			out.writeInt(arr.get(i).getMiddle());
 			out.writeInt(arr.get(i).getRight());
 		}
+	}
+	
+	public static void append_tuple (DataOutputStream out, MutableTriple<Integer, Integer, Integer> t) throws IOException {
+		out.writeInt(t.getLeft());
+		out.writeInt(t.getMiddle());
+		out.writeInt(t.getRight());
 	}
 }
