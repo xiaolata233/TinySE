@@ -32,22 +32,18 @@ public class DiskIO {
 	
 	public static int read_array (DataInputStream in, int nelements, 
 			ArrayList<MutableTriple<Integer, Integer, Integer>> arr) throws IOException {
-		int cnt = 0, readint = 0;
-		
-		try {
-			for ( ; cnt<nelements; cnt++) {
+		for (int cnt = 0; cnt<nelements; cnt++) {
+			try {
 				arr.get(cnt).setLeft(in.readInt());
-				readint++;
-				arr.get(cnt).setMiddle(in.readInt());
-				readint++;
-				arr.get(cnt).setRight(in.readInt());
-				readint++;
 			}
+			catch (EOFException e) {
+				return cnt;
+			}
+			arr.get(cnt).setMiddle(in.readInt());
+			arr.get(cnt).setRight(in.readInt());
 		}
-		catch (EOFException e) {
-			assert(readint % 3 == 0);
-		}
-		return cnt;
+
+		return nelements;
 	}
 	
 	public static void sort_arr (List<MutableTriple<Integer, Integer, Integer>> arr, int nelements) {
