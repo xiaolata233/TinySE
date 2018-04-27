@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.hanyang</groupId>
 	<artifactId>tinyse</artifactId>
-	<version>2018.stage_2.build_1</version>
+	<version>2018.stage_3.build_1</version>
 	<name>Tiny Search Engine</name>
 	<description>Minimal search engine for IR class (instructed by Prof. Younghoon Kim,  Hanyang Univ. ERICA)</description>
 	<dependencies>
