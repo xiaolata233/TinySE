@@ -1,11 +1,13 @@
 package edu.hanyang.indexer;
 
+import java.io.IOException;
+
 public interface BPlusTree {
-	public void open(String filepath, int blocksize, int nblocks);
+	public void open(String filepath, int blocksize, int nblocks) throws IOException;
 
-	public void insert(int key, int val);
+	public void insert(int key, int val) throws IOException;
 
-	public int search(int key);
+	public int search(int key) throws IOException;
 
-	public void close();
+	public void close() throws IOException;
 }
