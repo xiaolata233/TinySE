@@ -12,14 +12,14 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.TreeMap;
 
-public class Tokenize {
+public class TokenizeEng {
 	
 	private Tokenizer tokenizer = null;
 	
 	private int current_termid = 0;
 	private TreeMap<String, Integer> termids = new TreeMap<String, Integer> ();
 	
-	public Tokenize () throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+	public TokenizeEng () throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		// external code binding
 		Class<?> cls = Class.forName("edu.hanyang.submit.TinySETokenizer");
 		tokenizer = (Tokenizer) cls.newInstance();
@@ -92,7 +92,7 @@ public class Tokenize {
 			System.exit(1);
 		}
 		
-		Tokenize indexer = new Tokenize();
+		TokenizeEng indexer = new TokenizeEng();
 		indexer.run(args[0], args[1], args[2]);
 	}
 
