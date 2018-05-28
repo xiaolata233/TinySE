@@ -12,7 +12,7 @@ public interface PositionCursor {
 	 * true if current cursor is located at the end of list
 	 * false otherwise
 	 */
-	public boolean is_efl() throws IOException;
+	public boolean is_eol() throws IOException;
 	/**
 	 * @return
 	 * position at the current cursor

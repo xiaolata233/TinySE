@@ -39,6 +39,7 @@ public class QueryPlanTree {
 	 *                         root = { type = OP_AND }
 	 *                    /                             \
 	 *                  left                           right = { type = OP_REMOVE_POS }
+	 *                  = {type=OP_AND}
 	 *          /                    \                    |
 	 *       left                    right              left = { type = OPRAND, termid = 4931 }
 	 *       = {type=OP_REMOVE_POS}  = {type=OP_REMOVE_POS}

@@ -8,7 +8,7 @@ public interface DocumentCursor {
 	 * true if the cursor is currently located at the end of list
 	 * false otherwise
 	 */
-	public boolean is_efl() throws IOException;
+	public boolean is_eol() throws IOException;
 	/**
 	 * @return
 	 * docid at the current cursor
