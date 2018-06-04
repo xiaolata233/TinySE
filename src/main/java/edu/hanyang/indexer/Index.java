@@ -40,11 +40,40 @@ public class Index {
 		
 		int[] tuple = new int[3];
 		
-		int cnt = 0;
+		int cnt = 0;				// # of distinct words (terms)
 		int prev_word = -1;
+		
+		// initialize inverted list
+		// NaiveInvertedList invlist = new NaiveInvertedList ();
+		// invlist.init();
+		
+		// for each tuple,
 		while (read_tuple(input, tuple)) {
-			cnt++;
+			if (prev_word > 0 || prev_word < tuple[0]) {
+				// write inverted list on the inverted file -> get position (block number)
+				// int poistion = invlist.writeToDisk();
+				
+				// add (prev_word, position) into b+ tree
+				
+				prev_word = tuple[0];
+				cnt++;
+				
+				// initialize inverted list
+				// invlist.init();
+			}
+			else if (prev_word < 0) {
+				prev_word = tuple[0];
+			}
+				
+			// append to the current inverted list
+			// invlist.add(tuple[1], tuple[2]);
 		}
+		
+		//if (invlist.size() > 0) {
+			//int poistion = invlist.writeToDisk();
+			// add (prev_word, position) into b+ tree
+			// cnt++;
+		//}
 	}
 
 	private boolean read_tuple (DataInputStream in, int[] tuple) throws IOException {
