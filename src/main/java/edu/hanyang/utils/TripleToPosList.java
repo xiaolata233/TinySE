@@ -3,17 +3,13 @@ package edu.hanyang.utils;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-
-import org.apache.commons.lang3.tuple.MutableTriple;
 
 public class TripleToPosList {
 	String filepath = "../all-the-news/";
@@ -39,7 +35,7 @@ public class TripleToPosList {
 				
 				CheckIsItFull : while(capacity < blocksize) {
 					if(newDoc) {
-						System.out.print("¡¼"+pkt.readInt()+"¡½\t");
+						System.out.print("ã€"+pkt.readInt()+"ã€‘\t");
 						capacity = capacity + 4;
 						newDoc = false;
 						continue CheckIsItFull;
@@ -74,8 +70,8 @@ public class TripleToPosList {
 	}
 	
 	// Make posting list from sorted inverted list data
-	//	<Header> : word°¡ Á¡À¯ÇÏ´Â ºí·Ï °³¼ö, ÀĞ¾î¾ßÇÏ´Â doc°³¼ö (ÀüºÎ int)
-	//	<Content> : Doc_id (int), # of pos, pos1, pos2, ¡¦ (short)
+	//	<Header> : wordê°€ ì ìœ í•˜ëŠ” ë¸”ë¡ ê°œìˆ˜, ì½ì–´ì•¼í•˜ëŠ” docê°œìˆ˜ (ì „ë¶€ int)
+	//	<Content> : Doc_id (int), # of pos, pos1, pos2, â€¦ (short)
 	public void readDataFile(String filename) {
 		DataInputStream dis = null;
 		try {
