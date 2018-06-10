@@ -15,21 +15,30 @@ public class TripleToPosList {
 	String filepath = "../all-the-news/";
 	int blocksize = 52;
 	
-	public void introduce(String filename) {
-		DataInputStream dis = null;
+	public void introduce(String filename, int targetWord) {
+		RandomAccessFile raf = null;
 		try {
-			dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filepath+filename)));
+			raf = new RandomAccessFile(filepath+filename, "r");
+			long skip = 0;
+			int numOfBlock = raf.readInt();
+
+			for(int i = 0; i < targetWord; i++) {
+				skip += 8 + numOfBlock * blocksize;
+				raf.seek(skip);
+				numOfBlock = raf.readInt();
+			}
+			
 			byte[] buf = new byte[blocksize];
 			int cnt = 0;
 			int numOfPos = 0;
 			boolean newDoc = true;
-			int numOfBlock = dis.readInt();
+		
 			System.out.println("<HEADER>");
-			System.out.println("["+numOfBlock+", "+dis.readInt()+"]");
+			System.out.println("["+numOfBlock+", "+raf.readInt()+"]");
 			System.out.println("<CONTENT>");
 			
 			while(cnt < numOfBlock) {
-				dis.readFully(buf);
+				raf.readFully(buf);
 				DataInputStream pkt = new DataInputStream(new ByteArrayInputStream(buf));
 				int capacity = 0;
 				
@@ -64,6 +73,7 @@ public class TripleToPosList {
 				System.out.println();
 				cnt++;
 			}
+			cnt = 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -85,17 +95,21 @@ public class TripleToPosList {
 			int cnt = 0;
 			int numOfDoc = 0;
 			int numOfPos = 0;
+			int currentVal = 0;
 
 			// <WordID, DocID, Position>
-			while(currentWordID == 0) {
-				int currentVal = dis.readInt();
+			while((currentVal = dis.readInt()) != -1) {
 				if (cnt%3 == 2) { // Here comes a new position
 					content.add((short) currentVal);
 					numOfPos++;
 				}
 				else if (cnt%3 == 0 && currentWordID != currentVal) { // Here comes a new word
+					content.set(content.size()-numOfPos-1, (short) numOfPos);
 					byteBufferWrite(numOfDoc, docID, content);
 					currentWordID = currentVal;
+					currentDocID = -1;
+					numOfDoc = 0;
+					docID.clear();
 					content.clear();
 				}
 				else if (cnt%3 == 1 && currentDocID != currentVal) { // Here comes a new document
@@ -121,12 +135,14 @@ public class TripleToPosList {
 		byte[] buf = new byte[blocksize];
 		ByteBuffer bf = ByteBuffer.wrap(buf);
 		RandomAccessFile raf = new RandomAccessFile(filepath+"PostingList.data", "rw");
+		raf.seek(raf.length());
 	
 		raf.writeInt(blockcnt); // Room for Header value 1
 		raf.writeInt(numOfDoc); // Header value 2
 		
 		for(int i = 0; i < content.size(); i++) {
 			if (bf.position() == bf.capacity() || (bf.position() == bf.capacity()-2 && content.get(i) == -1)) {
+			// ByteBuffer is full <OR> No room for DocID value (Integer)
 				raf.write(buf);
 				bf.clear();
 				blockcnt++;
@@ -139,7 +155,9 @@ public class TripleToPosList {
 				bf.putShort(content.get(i));
 			}
 		}
-		raf.seek(0);
+		raf.write(buf);
+		bf.clear();
+		raf.seek(raf.length()-blockcnt*52-8);
 		raf.writeInt(blockcnt); // Header value 1
 
 		raf.close();
@@ -148,6 +166,6 @@ public class TripleToPosList {
 	public static void main(String[] args) throws FileNotFoundException {
 		TripleToPosList ttp = new TripleToPosList();
 //		ttp.readDataFile("SortedInvertedTripleList.data");
-		ttp.introduce("PostingList.data");
+		ttp.introduce("PostingList.data", 0);
 	}
 }
