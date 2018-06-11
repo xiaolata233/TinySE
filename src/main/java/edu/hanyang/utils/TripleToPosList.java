@@ -21,12 +21,12 @@ public class TripleToPosList {
 		RandomAccessFile raf = null;
 		try {
 			raf = new RandomAccessFile(filepath+filename, "r");
-			long skip = 0;
+			long offset = 0;
 			int numOfBlock = raf.readInt();
 
 			for(int i = 0; i < targetWord; i++) {
-				skip += 8 + numOfBlock * blocksize;
-				raf.seek(skip);
+				offset += 16 + numOfBlock * blocksize;
+				raf.seek(offset);
 				numOfBlock = raf.readInt();
 			}
 			
@@ -36,7 +36,10 @@ public class TripleToPosList {
 			boolean newDoc = true;
 		
 			System.out.println("<HEADER>");
-			System.out.println("["+numOfBlock+", "+raf.readInt()+"]");
+			System.out.println("Blocks: "+numOfBlock);
+			System.out.println("Documents: "+raf.readInt());
+			System.out.println("Min Doc: "+raf.readInt());
+			System.out.println("Max Doc: "+raf.readInt());
 			System.out.println("<CONTENT>");
 			
 			while(cnt < numOfBlock) {
@@ -46,7 +49,7 @@ public class TripleToPosList {
 				
 				CheckIsItFull : while(capacity < blocksize) {
 					if(newDoc) {
-						System.out.print("【"+pkt.readInt()+"】\t");
+						System.out.print("["+pkt.readInt()+"] ");
 						capacity = capacity + 4;
 						newDoc = false;
 						continue CheckIsItFull;
@@ -75,15 +78,14 @@ public class TripleToPosList {
 				System.out.println();
 				cnt++;
 			}
-			cnt = 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
 	// Make posting list from sorted inverted list data
-	//	<Header> : word가 점유하는 블록 개수, 읽어야하는 doc개수 (전부 int)
-	//	<Content> : Doc_id (int), # of pos, pos1, pos2, … (short)
+	//	<Header> : # of Blocks, # of Docs, Min Doc, Max Doc (all int)
+	//	<Content> : Doc_id (int), # of pos, pos1, pos2, ... (short)
 	public void readDataFile(String filename) {
 		DataInputStream dis = null;
 		try {
@@ -131,32 +133,28 @@ public class TripleToPosList {
 		}
 	}
 	
-	// Make B+Tree from sorted inverted list data
+	// Make B+Tree Posting List
 	public void readDataFileToTree(String filename) {
-		DataInputStream dis = null;
-		TinySEBPlusTree tbt = new TinySEBPlusTree();
-		tbt.open("metapath", filepath+"bplustree.tree", blocksize, 10);
+		RandomAccessFile raf = null;
 		try {
-			dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filepath+filename)));
+			raf = new RandomAccessFile(filepath+filename, "r");
+			long offset = 0;
 			int currentWordID = 0;
-			int currentDocID = -1;
-			int cnt = 0;
-			int currentVal = 0;
-
-			// <WordID, DocID, Position>
-			while((currentVal = dis.readInt()) != -1) {
-				if (cnt%3 == 0 && currentWordID != currentVal) { // Here comes a new word
-					currentWordID = currentVal;
-					currentDocID = -1;
-				}
-				else if (cnt%3 == 1 && currentDocID != currentVal) { // Here comes a new document
-					currentDocID = currentVal;
-					tbt.insert(currentWordID, currentDocID);
-				}
-				cnt++;
+			int numOfBlock = 0;
+			
+			TinySEBPlusTree tbt = new TinySEBPlusTree();
+			tbt.open("metapath", filepath+"bplustree.tree", blocksize, 10);
+			tbt.insert(currentWordID, numOfBlock);
+	
+			while((numOfBlock = raf.readInt()) != -1) {
+				currentWordID++;
+				offset += 16 + numOfBlock * blocksize;
+				tbt.insert(currentWordID, (int)offset);
+				raf.seek(offset);
 			}
 			tbt.close();
-			dis.close();
+			raf.close();
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -172,6 +170,8 @@ public class TripleToPosList {
 	
 		raf.writeInt(blockcnt); // Room for Header value 1
 		raf.writeInt(numOfDoc); // Header value 2
+		raf.writeInt(docID.get(0)); // Header value 3
+		raf.writeInt(docID.get(docID.size()-1)); // Header value 4
 		
 		for(int i = 0; i < content.size(); i++) {
 			if (bf.position() == bf.capacity() || (bf.position() == bf.capacity()-2 && content.get(i) == -1)) {
@@ -190,7 +190,7 @@ public class TripleToPosList {
 		}
 		raf.write(buf);
 		bf.clear();
-		raf.seek(raf.length()-blockcnt*52-8);
+		raf.seek(raf.length()-blockcnt*blocksize-16);
 		raf.writeInt(blockcnt); // Header value 1
 
 		raf.close();
@@ -199,7 +199,7 @@ public class TripleToPosList {
 	public static void main(String[] args) throws FileNotFoundException {
 		TripleToPosList ttp = new TripleToPosList();
 //		ttp.readDataFile("SortedInvertedTripleList.data");
-		ttp.readDataFileToTree("SortedInvertedTripleList.data");
-//		ttp.introduce("PostingList.data", 0);
+//		ttp.readDataFileToTree("PostingList_52.data");
+		ttp.introduce("PostingList_52.data", 1);
 	}
 }
