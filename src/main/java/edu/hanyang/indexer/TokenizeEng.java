@@ -53,15 +53,15 @@ public class TokenizeEng {
 			
 			for (File f : contents) {
 				if (f.isFile()) {
-					int docid = Integer.parseInt(f.getName());
+					int docid = 0;
 					
-					int pos = 0;
+					
 					try (BufferedReader br = new BufferedReader(new FileReader(f.getAbsolutePath()))) {
 	
 						String line = null;
 						while ((line = br.readLine()) != null) {
 							List<String> arr = tokenizer.split(line);
-							
+							int pos = 0;
 							for (String term: arr) {
 								int id = get_termid (term);
 								
@@ -69,6 +69,7 @@ public class TokenizeEng {
 								postings.writeInt(docid);
 								postings.writeInt(pos++);
 							}
+							docid++;
 						}
 	
 					} catch (IOException e) {
