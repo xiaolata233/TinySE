@@ -198,8 +198,8 @@ public class TripleToPosList {
 
 	public static void main(String[] args) throws FileNotFoundException {
 		TripleToPosList ttp = new TripleToPosList();
-//		ttp.readDataFile("SortedInvertedTripleList.data");
-//		ttp.readDataFileToTree("PostingList_52.data");
-		ttp.introduce("PostingList_52.data", 1);
+		ttp.readDataFile("SortedInvertedTripleList.data");
+//		ttp.readDataFileToTree("PostingList.data");
+//		ttp.introduce("PostingList.data", 1);
 	}
 }
