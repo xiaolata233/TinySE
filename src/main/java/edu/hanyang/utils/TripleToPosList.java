@@ -11,6 +11,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.hanyang.submit.TinySEBPlusTree;
+
 public class TripleToPosList {
 	String filepath = "../all-the-news/";
 	int blocksize = 52;
@@ -128,6 +130,37 @@ public class TripleToPosList {
 			e.printStackTrace();
 		}
 	}
+	
+	// Make B+Tree from sorted inverted list data
+	public void readDataFileToTree(String filename) {
+		DataInputStream dis = null;
+		TinySEBPlusTree tbt = new TinySEBPlusTree();
+		tbt.open("metapath", filepath+"bplustree.tree", blocksize, 10);
+		try {
+			dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filepath+filename)));
+			int currentWordID = 0;
+			int currentDocID = -1;
+			int cnt = 0;
+			int currentVal = 0;
+
+			// <WordID, DocID, Position>
+			while((currentVal = dis.readInt()) != -1) {
+				if (cnt%3 == 0 && currentWordID != currentVal) { // Here comes a new word
+					currentWordID = currentVal;
+					currentDocID = -1;
+				}
+				else if (cnt%3 == 1 && currentDocID != currentVal) { // Here comes a new document
+					currentDocID = currentVal;
+					tbt.insert(currentWordID, currentDocID);
+				}
+				cnt++;
+			}
+			tbt.close();
+			dis.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void byteBufferWrite(int numOfDoc, List<Integer> docID, List<Short> content) throws IOException {
 		int blockcnt = 1;
@@ -166,6 +199,7 @@ public class TripleToPosList {
 	public static void main(String[] args) throws FileNotFoundException {
 		TripleToPosList ttp = new TripleToPosList();
 //		ttp.readDataFile("SortedInvertedTripleList.data");
-		ttp.introduce("PostingList.data", 0);
+		ttp.readDataFileToTree("SortedInvertedTripleList.data");
+//		ttp.introduce("PostingList.data", 0);
 	}
 }
