@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import edu.hanyang.submit.TinySEBPlusTree;
+import edu.hanyang.indexer.BPlusTree;
 
 public class TripleToPosList {
 	String filepath = "../all-the-news/";
@@ -133,6 +133,26 @@ public class TripleToPosList {
 		}
 	}
 	
+	public BPlusTree loadclass () {
+		// external code binding
+		Class<?> cls;
+		BPlusTree tree = null;
+		
+		try {
+			cls = Class.forName("edu.hanyang.submit.TinySEBPlusTree");
+			tree = (BPlusTree) cls.newInstance();
+			
+		} catch (ClassNotFoundException e) {
+			System.err.println("[error] cannot find class edu.hanyang.submit.TinySEBPlusTree");
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		return tree;
+	}
+	
 	// Make B+Tree Posting List
 	public void readDataFileToTree(String filename) {
 		RandomAccessFile raf = null;
@@ -142,7 +162,7 @@ public class TripleToPosList {
 			int currentWordID = 0;
 			int numOfBlock = 0;
 			
-			TinySEBPlusTree tbt = new TinySEBPlusTree();
+			BPlusTree tbt = loadclass();
 			tbt.open("metapath", filepath+"bplustree.tree", blocksize, 10);
 			tbt.insert(currentWordID, numOfBlock);
 	

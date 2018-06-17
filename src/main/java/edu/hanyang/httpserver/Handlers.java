@@ -1,4 +1,4 @@
-package httpserver;
+package edu.hanyang.httpserver;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,36 +17,18 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import edu.hanyang.indexer.BPlusTree;
+import edu.hanyang.indexer.DocumentCursor;
+
 public class Handlers {
-	public static class RootHandler implements HttpHandler {
-
-		@Override
-		public void handle(HttpExchange he) throws IOException {
-			String response = "<h1>Server start success if you see this message</h1>" + "<h1>Port: " + SimpleHttpServer.port + "</h1>";
-			he.sendResponseHeaders(200, response.length());
-			OutputStream os = he.getResponseBody();
-			os.write(response.getBytes());
-			os.close();
-		}
-	}
-
-	public static class EchoHeaderHandler implements HttpHandler {
-
-		@Override
-		public void handle(HttpExchange he) throws IOException {
-			Headers headers = he.getRequestHeaders();
-			Set<Map.Entry<String, List<String>>> entries = headers.entrySet();
-			String response = "";
-			for (Map.Entry<String, List<String>> entry : entries)
-				response += entry.toString() + "\n";
-			he.sendResponseHeaders(200, response.length());
-			OutputStream os = he.getResponseBody();
-			os.write(response.toString().getBytes());
-			os.close();
-		}
-	}
 
 	public static class EchoGetHandler implements HttpHandler {
+		
+		public void loadclass() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+			// external code binding
+			Class<?> cls = Class.forName("edu.hanyang.submit.TinySEBPlusTree");
+			tree = (BPlusTree) cls.newInstance();
+		}
 
 		@Override
 		public void handle(HttpExchange he) throws IOException {
@@ -55,8 +37,13 @@ public class Handlers {
 			URI requestedUri = he.getRequestURI();
 			String query = requestedUri.getRawQuery();
 			parseQuery(query, parameters);
-			// send response
+			
 			String response = "";
+			
+			// process query
+			DocumentCursor list = executeQuery(parameters.get("query"));
+			
+			// send response
 			for (String key : parameters.keySet()) {
 				response += key + " = " + parameters.get(key) + "\n";
 			}
@@ -66,30 +53,6 @@ public class Handlers {
 			os.close();
 		}
 
-	}
-
-	public static class EchoPostHandler implements HttpHandler {
-
-		@Override
-		public void handle(HttpExchange he) throws IOException {
-			System.out.println("Served by /echoPost handler...");
-			// parse request
-			Map<String, Object> parameters = new HashMap<String, Object>();
-			InputStreamReader isr = new InputStreamReader(he.getRequestBody(), "utf-8");
-			BufferedReader br = new BufferedReader(isr);
-			String query = br.readLine();
-			parseQuery(query, parameters);
-			// send response
-			String response = "";
-			for (String key : parameters.keySet()) {
-				response += key + " = " + parameters.get(key) + "\n";
-			}
-			he.sendResponseHeaders(200, response.length());
-			OutputStream os = he.getResponseBody();
-			os.write(response.toString().getBytes());
-			os.close();
-
-		}
 	}
 
 	@SuppressWarnings("unchecked")
