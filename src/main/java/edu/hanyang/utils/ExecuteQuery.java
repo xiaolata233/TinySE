@@ -67,9 +67,9 @@ public class ExecuteQuery {
 				throw new Exception("Operation Error (list type mismatching) : right result is positional");
 			}
 			
-			IntermediateList out = new TestIntermediateList();
+			TestIntermediateList out = new TestIntermediateList();
 			qp.op_and_wo_pos(left, right, out);
-			return new TestDocCursor(out);
+			return new InvidxDocCursor(out);
 		}
 
 		else if (node.type == NODE_TYPE.OP_SHIFTED_AND) {
@@ -87,9 +87,9 @@ public class ExecuteQuery {
 				throw new Exception("Operation Error (list type mismatching) : right result is non-positional");
 			}
 			
-			IntermediatePositionalList out = new TestIntermediatePositionalList();
+			TestIntermediatePositionalList out = new TestIntermediatePositionalList();
 			qp.op_and_w_pos(left, right, node.shift, out);
-			return new TestDocCursor(out);
+			return new InvidxDocCursor(out);
 		}
 
 		else if (node.type == NODE_TYPE.OP_REMOVE_POS) {
@@ -103,8 +103,8 @@ public class ExecuteQuery {
 			}
 			else if (node.left.type == NODE_TYPE.OP_SHIFTED_AND) {
 				DocumentCursor left = executeQuery(qp, node.left);
-				IntermediateList list = removePos(left);
-				return new TestDocCursor(list);
+				TestIntermediateList list = (TestIntermediateList) removePos(left);
+				return new InvidxDocCursor(list);
 			}
 			else {
 				throw new Exception("Invalid tree : child of op_remove_pos should be either oprand or op_shifted_and");
