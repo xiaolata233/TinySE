@@ -3,7 +3,6 @@ package edu.hanyang.utils;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 
 import edu.hanyang.indexer.Query;
 
