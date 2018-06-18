@@ -23,12 +23,6 @@ import edu.hanyang.indexer.DocumentCursor;
 public class Handlers {
 
 	public static class EchoGetHandler implements HttpHandler {
-		
-		public void loadclass() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-			// external code binding
-			Class<?> cls = Class.forName("edu.hanyang.submit.TinySEBPlusTree");
-			tree = (BPlusTree) cls.newInstance();
-		}
 
 		@Override
 		public void handle(HttpExchange he) throws IOException {

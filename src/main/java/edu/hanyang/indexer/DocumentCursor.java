@@ -3,6 +3,9 @@ package edu.hanyang.indexer;
 import java.io.IOException;
 
 public abstract class DocumentCursor {
+	public enum LIST_TYPE { POSLIST, NONPOSLIST };
+	public LIST_TYPE type = null;
+	
 	/**
 	 * @return
 	 * true if the cursor is currently located at the end of list
