@@ -64,11 +64,14 @@ public class Handlers {
 			// send response
 			while (! list.is_eol()) {
 				int docid = list.get_docid();
+				String txt = MysqlTable.get_doc(docid);
+				
 				list.go_next();
 			}
 			for (String key : parameters.keySet()) {
 				response += key + " = " + parameters.get(key) + "\n";
 			}
+			
 			he.sendResponseHeaders(200, response.length());
 			OutputStream os = he.getResponseBody();
 			os.write(response.toString().getBytes());
