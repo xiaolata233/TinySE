@@ -32,6 +32,7 @@ public class EvalQueryProcess {
 
 		int val = 0;
 		String testquery = "";
+		boolean frontQuote = true;
 		
 		while(testqueries.size() < Integer.parseInt(args[0])) {
 			val = dis.readInt();
@@ -41,7 +42,14 @@ public class EvalQueryProcess {
 			}
 			else {
 				if (val == -2) {
-					testquery += '"';
+					if(frontQuote) {
+						testquery += '"';
+						frontQuote = false;
+					}
+					else {
+						testquery = testquery.substring(0, testquery.length()-2) + "\" ";
+						frontQuote = true;
+					}
 				}
 				else {
 					testquery += String.valueOf(val) + " ";
