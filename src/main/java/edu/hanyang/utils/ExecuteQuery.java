@@ -122,7 +122,6 @@ public class ExecuteQuery {
 		}
 
 		else if (node.type == NODE_TYPE.OPRAND) {
-			System.out.println("WORD No." + node.termid);
 			return new InvidxDocCursor(node.termid, LIST_TYPE.POSLIST, tree);
 		}
 
