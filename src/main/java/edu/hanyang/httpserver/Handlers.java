@@ -7,37 +7,65 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import edu.hanyang.indexer.BPlusTree;
 import edu.hanyang.indexer.DocumentCursor;
+import edu.hanyang.indexer.QueryProcess;
+import edu.hanyang.utils.ExecuteQuery;
+import edu.hanyang.utils.MysqlTable;
 
 public class Handlers {
 
 	public static class EchoGetHandler implements HttpHandler {
+		private ExecuteQuery eq = null;
+		private QueryProcess qp = null;
+		
+		public EchoGetHandler (String dbname, String dbuser, String dbpass) throws Exception {
+			// connect db
+			MysqlTable.init_conn(dbname, dbuser, dbpass);
+			
+			// create query processor
+			eq = new ExecuteQuery();
+			
+			// load query processor class
+			Class<?> cls = Class.forName("edu.hanyang.submit.TinySEQueryProcess");
+			qp = (QueryProcess) cls.newInstance();
+		}
 
 		@Override
 		public void handle(HttpExchange he) throws IOException {
 			// parse request
-			Map<String, Object> parameters = new HashMap<String, Object>();
+			Map<String, String> parameters = new HashMap<String, String>();
 			URI requestedUri = he.getRequestURI();
 			String query = requestedUri.getRawQuery();
-			parseQuery(query, parameters);
+			
+			if (! parseQuery(query, parameters)) {
+				he.sendResponseHeaders(400,-1);
+				he.close();
+				return;
+			}
 			
 			String response = "";
 			
 			// process query
-			DocumentCursor list = executeQuery(parameters.get("query"));
+			DocumentCursor list;
+			try {
+				list = eq.executeQuery(qp, parameters.get("query"));
+			} catch (Exception e) {
+				he.sendResponseHeaders(500,-1);
+				he.close();
+				return;
+			}
 			
 			// send response
+			while (! list.is_eol()) {
+				int docid = list.get_docid();
+				list.go_next();
+			}
 			for (String key : parameters.keySet()) {
 				response += key + " = " + parameters.get(key) + "\n";
 			}
@@ -50,39 +78,31 @@ public class Handlers {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void parseQuery(String query, Map<String, Object> parameters) throws UnsupportedEncodingException {
+	public static boolean parseQuery(String query, Map<String, String> parameters) {
 
 		if (query != null) {
 			String pairs[] = query.split("[&]");
 
 			for (String pair : pairs) {
 				String param[] = pair.split("[=]");
+				if (param.length != 2) {
+					return false;
+				}
 
 				String key = null;
 				String value = null;
-				if (param.length > 0) {
+				
+				try {
 					key = URLDecoder.decode(param[0], System.getProperty("file.encoding"));
-				}
-
-				if (param.length > 1) {
 					value = URLDecoder.decode(param[1], System.getProperty("file.encoding"));
+				} catch (UnsupportedEncodingException e) {
+					return false;
 				}
 
-				if (parameters.containsKey(key)) {
-					Object obj = parameters.get(key);
-					if (obj instanceof List<?>) {
-						List<String> values = (List<String>) obj;
-						values.add(value);
-					} else if (obj instanceof String) {
-						List<String> values = new ArrayList<String>();
-						values.add((String) obj);
-						values.add(value);
-						parameters.put(key, values);
-					}
-				} else {
-					parameters.put(key, value);
-				}
+				parameters.put(key, value);
 			}
 		}
+		
+		return true;
 	}
 }
