@@ -3,7 +3,7 @@ package edu.hanyang.indexer;
 public class Query {
 	public int numOfWord;
 	public int docID;
-	public int[] query;
+	public int[] query; // -1: empty, -2: quotation mark("), other integer values: termid
 	
 	public Query(int docID, int num) {
 		numOfWord = num;
@@ -30,6 +30,15 @@ public class Query {
 		query[position] = termid;
 	}
 	
+	//XXX: must put quotation query at first initialization of 'Query' class
+	public void put_quotation(int[] termids) {
+		query[0] = -2;
+		for(int i = 0; i < termids.length; i++) {
+			query[i+1] = termids[i];
+		}
+		query[termids.length+1] = -2;
+	}
+	
 	public boolean isEmpty() {
 		for(int termid : query) {
 			if(termid == -1) { return true; }
@@ -48,7 +57,13 @@ public class Query {
 		System.out.print(docID+": ");
 		System.out.print("[");
 		for(int value : query) {
-			System.out.print(value+", ");
+			if(value == -2) {
+				System.out.print('"');
+			}
+			else {
+				System.out.print(value+", ");
+			}
+
 		}
 		System.out.println("]");
 	}

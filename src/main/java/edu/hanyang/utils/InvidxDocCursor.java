@@ -1,139 +1,126 @@
 package edu.hanyang.utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.hanyang.indexer.BPlusTree;
 import edu.hanyang.indexer.DocumentCursor;
 import edu.hanyang.indexer.PositionCursor;
-import edu.hanyang.submit.TinySEBPlusTree;
 
 public class InvidxDocCursor extends DocumentCursor {
+	final int BLOCK_SIZE = 52;
 	String filepath = "../all-the-news/";
-	String filename = "bplustree.tree";
 	String posListFilename = "PostingList.data";
-	int blocksize = 52;
-	TinySEBPlusTree btree = new TinySEBPlusTree();
-	List<Integer> list = new ArrayList<>();
-	public int termid = -1;
+	byte[] buf = new byte[BLOCK_SIZE];
+	ByteBuffer buffer = ByteBuffer.wrap(buf);
 	
-	public InvidxDocCursor (int termid, LIST_TYPE type) throws IOException {
+	int bufCapacity = BLOCK_SIZE;
+	
+	BPlusTree tree = null;
+	TestPosCursor posCursor = null;
+	RandomAccessFile raf = new RandomAccessFile(filepath + posListFilename, "r");
+	public int termid = -1;
+	public int currentDocID = 0;
+	
+	int numOfBlocks = 0;
+	int numOfDocs = 0;
+	int minDocID = 0;
+	int maxDocID = 0;
+	long offset = 0;
+	
+	int cnt = 0;
+	
+	public InvidxDocCursor (int termid, LIST_TYPE type, BPlusTree tree) throws IOException {
 		this.termid = termid;
 		this.type = type;
 		
-		btree.open("metapath", filepath+filename, blocksize, 10);
-		RandomAccessFile raf = new RandomAccessFile(filepath+posListFilename, "r");
-		raf.seek(btree.search(termid));
-		int numOfBlock = raf.readInt(); // numOfBlock
-		raf.readInt(); // numOfDocuments
-		raf.readInt(); // min Doc Number
-		raf.readInt(); // MAX Doc Number
+		this.tree = tree;
+		offset = tree.search(termid);
+		raf.seek(offset);
 		
-		byte[] buf = new byte[blocksize];
-		int cnt = 0;
-		int numOfPos = 0;
-		boolean newDoc = true;
+		numOfBlocks = raf.readInt();
+		numOfDocs = raf.readInt();
+		minDocID = raf.readInt();
+		maxDocID = raf.readInt();
 		
-		while(cnt < numOfBlock) {
-			raf.readFully(buf);
-			DataInputStream pkt = new DataInputStream(new ByteArrayInputStream(buf));
-			int capacity = 0;
-			
-			CheckIsItFull : while(capacity < blocksize) {
-				if(newDoc) {
-					list.add(pkt.readInt());
-					capacity = capacity + 4;
-					newDoc = false;
-					continue CheckIsItFull;
-				}
-				else if(numOfPos == 0) {
-					numOfPos = pkt.readShort();
-					capacity = capacity + 2;
-					continue CheckIsItFull;
-				}
-				else if(numOfPos > 1){
-					pkt.readShort();
-					capacity = capacity + 2;
-					numOfPos--;
-					continue CheckIsItFull;
-				}
-				else {
-					pkt.readShort();
-					capacity = capacity + 2;
-					numOfPos--;
-					newDoc = true;
-					if (capacity == blocksize-2) { break CheckIsItFull; }
-					continue CheckIsItFull;
-				}
-			}
-			cnt++;
-			pkt.close();
-		}
-		raf.close();
-	}
-	
-	public InvidxDocCursor(TestIntermediateList list) {
-		this.list = list.docList;
-		this.type = LIST_TYPE.NONPOSLIST;
-	}
-
-	public InvidxDocCursor(TestIntermediatePositionalList list) {
-		this.list = list.posList;
-		this.type = LIST_TYPE.POSLIST;
+		go_next();
 	}
 
 	@Override
 	public boolean is_eol() throws IOException {
-		// TODO Auto-generated method stub
+		if (cnt >= numOfDocs) {
+//			System.out.println(currentDocID+" & "+maxDocID);
+			return true;
+		}
 		return false;
 	}
 
 	@Override
 	public int get_docid() throws IOException {
-		// TODO Auto-generated method stub
-		return 0;
+		return currentDocID;
 	}
 
 	@Override
-	public void go_next() throws IOException {
-		// TODO Auto-generated method stub
+	public void go_next() throws IOException  {
+		if(is_eol()) {
+			throw new IOException("end of posting list");
+		}
 		
+		if(bufCapacity >= BLOCK_SIZE-2) {
+			clearBuffer();
+		}
+		
+		currentDocID = buffer.getInt(bufCapacity);
+		bufCapacity += 4;
+		
+		if(bufCapacity == BLOCK_SIZE) {
+			clearBuffer();
+		}
+		
+		int numOfPos = buffer.getShort(bufCapacity);
+		bufCapacity += 2;
+		List<Integer> posList = new ArrayList<>();
+
+		for(int i = 0; i < numOfPos; i++) {
+			if(bufCapacity == BLOCK_SIZE) {
+				clearBuffer();
+			}
+			posList.add((int) buffer.getShort(bufCapacity));
+			bufCapacity += 2;
+		}
+		if(type == LIST_TYPE.POSLIST) { this.posCursor = new TestPosCursor(posList); }
+		
+		cnt++;
+	}
+
+	public void clearBuffer() throws IOException {
+		buffer.clear();
+		raf.read(buf);
+		bufCapacity = 0;
 	}
 
 	@Override
 	public PositionCursor get_position_cursor() throws IOException {
 		if (type != LIST_TYPE.POSLIST) throw new IOException("errror: this cursor cannot access in-doc positions");
-		return null;
+		return this.posCursor;
 	}
 
-	
-	// XXX: obsolete
 	@Override
 	public int get_doc_count() throws Exception {
-		// TODO Auto-generated method stub
-		return 0;
+		return numOfDocs;
 	}
 
 	@Override
 	public int get_min_docid() throws Exception {
-		// TODO Auto-generated method stub
-		return 0;
+		return minDocID;
 	}
 
 	@Override
 	public int get_max_docid() throws Exception {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	
-	public static void main(String[] args) throws Exception {
-		InvidxDocCursor idc = new InvidxDocCursor(1, LIST_TYPE.NONPOSLIST);
-//		for(int i = 0; i < idc.list.size(); i++) {
-//			System.out.print(idc.list.get(i)+", ");
-//		}
+		return maxDocID;
 	}
 
 }
