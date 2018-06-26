@@ -12,7 +12,7 @@ import com.sun.net.httpserver.HttpServer;
 
 public class SimpleHttpServer {
 	public static int port = 9000;
-	
+
 	private HttpServer server;
 
 	public void Start(int port, String dbname, String dbuser, String dbpass) throws Exception {
@@ -39,27 +39,25 @@ public class SimpleHttpServer {
 
 		// create the Options
 		Options options = new Options();
-		options.addOption( "P", "port", true, "Port number" );
-		options.addOption( "d", "db", true, "Document db name" );
-		options.addOption( "u", "user", true, "Document db user name" );
-		options.addOption( "p", "pass", true, "Document db user password" );
-			
-		CommandLine line = parser.parse( options, args );
-		if( line.hasOption("P") && 
+		options.addOption("P", "port", true, "Port number");
+		options.addOption("d", "db", true, "Document db name");
+		options.addOption("u", "user", true, "Document db user name");
+		options.addOption("p", "pass", true, "Document db user password");
+
+		CommandLine line = parser.parse(options, args);
+		if (line.hasOption("P") && 
 				line.hasOption("d") && 
-				line.hasOption( "u" ) && 
-				line.hasOption("p") ) {
-			
+				line.hasOption("u") && 
+				line.hasOption("p")) {
 			// start http server
 			SimpleHttpServer httpServer = new SimpleHttpServer();
-			httpServer.Start(
-					Integer.parseInt(line.getOptionValue("P")),
+			httpServer.Start(Integer.parseInt(line.getOptionValue("P")), 
 					line.getOptionValue("d"),
-					line.getOptionValue("u"),
-					line.getOptionValue("p")
-					);
-	    }
-//		System.out.println(System.getProperty("user.dir"));
-//		System.out.println(Main.class.getClassLoader().getResource("").getPath());
+					line.getOptionValue("u"), 
+					line.getOptionValue("p"));
+		}
+		
+		//		System.out.println(System.getProperty("user.dir"));
+		//		System.out.println(Main.class.getClassLoader().getResource("").getPath());
 	}
 }

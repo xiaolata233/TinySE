@@ -1,14 +1,16 @@
 package edu.hanyang.httpserver;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.json.simple.JSONObject;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -42,6 +44,7 @@ public class Handlers {
 			Map<String, String> parameters = new HashMap<String, String>();
 			URI requestedUri = he.getRequestURI();
 			String query = requestedUri.getRawQuery();
+			he.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
 			
 			if (! parseQuery(query, parameters)) {
 				he.sendResponseHeaders(400,-1);
@@ -49,12 +52,22 @@ public class Handlers {
 				return;
 			}
 			
-			String response = "";
+//			String response = "";
+			
+			JSONObject responseJSON = new JSONObject();
+			JSONObject dataJSON = new JSONObject();
+			
+			System.out.println(parameters.get("query"));
 			
 			// process query
 			DocumentCursor list;
+			long start, end;
 			try {
-				list = eq.executeQuery(qp, parameters.get("query"));
+				start = System.currentTimeMillis();
+				String newQuery = eq.translateQuery(parameters.get("query"));
+				System.out.println(newQuery);
+				list = eq.executeQuery(qp, newQuery);
+				end = System.currentTimeMillis();
 			} catch (Exception e) {
 				he.sendResponseHeaders(500,-1);
 				he.close();
@@ -62,19 +75,28 @@ public class Handlers {
 			}
 			
 			// send response
+			List<String> docList = new ArrayList<>();
+			List<Integer> docID = new ArrayList<>();
 			while (! list.is_eol()) {
 				int docid = list.get_docid();
+				docID.add(docid);
 				String txt = MysqlTable.get_doc(docid);
-				
+				docList.add(txt);
 				list.go_next();
 			}
-			for (String key : parameters.keySet()) {
-				response += key + " = " + parameters.get(key) + "\n";
+			
+			dataJSON.put("time", (end - start)/1000.0);
+			dataJSON.put("nDoc", docList.size());
+			responseJSON.put("info", dataJSON.toJSONString());
+			for (int i =0;i<docList.size();i++) {
+//				response += key + " = " + parameters.get(key) + "\n";
+				responseJSON.put(docList.get(i), docID.get(i));
 			}
 			
-			he.sendResponseHeaders(200, response.length());
+			he.sendResponseHeaders(200, responseJSON.toJSONString().length());
 			OutputStream os = he.getResponseBody();
-			os.write(response.toString().getBytes());
+			
+			os.write(responseJSON.toJSONString().getBytes());
 			os.close();
 		}
 
