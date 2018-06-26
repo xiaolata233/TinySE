@@ -10,6 +10,8 @@ import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.simple.JSONArray;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -61,10 +63,19 @@ public class Handlers {
 				return;
 			}
 			
+	        JSONArray list = new JSONArray();
+	        list.add("msg 1");
+	        list.add("msg 2");
+	        list.add("msg 3");
+			
 			// send response
 			while (! list.is_eol()) {
 				int docid = list.get_docid();
 				String txt = MysqlTable.get_doc(docid);
+				
+				JSONObject obj = new JSONObject();
+		        obj.put("name", "mkyong.com");
+		        obj.put("age", new Integer(100));
 				
 				list.go_next();
 			}
