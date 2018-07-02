@@ -1,7 +1,8 @@
 package edu.hanyang.httpserver;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -10,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -44,6 +44,8 @@ public class Handlers {
 			// parse request
 			Map<String, String> parameters = new HashMap<String, String>();
 			URI requestedUri = he.getRequestURI();
+			System.out.println("Local: " + he.getLocalAddress());
+			System.out.println("Remore: " + he.getRemoteAddress());
 			String query = requestedUri.getRawQuery();
 			he.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
 
@@ -66,9 +68,9 @@ public class Handlers {
 			DocumentCursor list = null;
 			long start, end;
 			try {
-				start = System.currentTimeMillis();
 				String newQuery = eq.translateQuery(parameters.get("query"));
 				System.out.println(newQuery);
+				start = System.currentTimeMillis();
 				list = eq.executeQuery(qp, newQuery);
 				end = System.currentTimeMillis();
 				dataJSON.put("time", (end - start) / 1000.0);
@@ -89,9 +91,11 @@ public class Handlers {
 				while (!list.is_eol()) {
 					int docid = list.get_docid();
 					docID.add(docid);
-					String txt = MysqlTable.get_doc(docid);
-
+					String txt = MysqlTable.get_doc(docid + 1);
 					docList.add(txt);
+					if (docList.size() == 10) {
+						break;
+					}
 					list.go_next();
 				}
 			}
@@ -102,13 +106,16 @@ public class Handlers {
 				responseJSON.put(docID.get(i), docList.get(i));
 			}
 
-			he.sendResponseHeaders(200, responseJSON.toJSONString().length());
-			OutputStream os = he.getResponseBody();
-
-			System.out.println("JSON" + responseJSON.toString());
-
-			os.write(responseJSON.toJSONString().getBytes());
-			os.close();
+			he.sendResponseHeaders(200, 0);
+			try (BufferedOutputStream os = new BufferedOutputStream(he.getResponseBody())) {
+	            try (ByteArrayInputStream bis = new ByteArrayInputStream(responseJSON.toJSONString().getBytes())) {
+	                byte [] buffer = new byte [4096];
+	                int count ;
+	                while ((count = bis.read(buffer)) != -1) {
+	                    os.write(buffer, 0, count);
+	                }
+	            }
+	        }
 		}
 
 	}
