@@ -44,12 +44,8 @@ public class Handlers {
 			// parse request
 			Map<String, String> parameters = new HashMap<String, String>();
 			URI requestedUri = he.getRequestURI();
-			System.out.println("Local: " + he.getLocalAddress());
-			System.out.println("Remore: " + he.getRemoteAddress());
 			String query = requestedUri.getRawQuery();
 			he.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-
-			System.out.println("row query: " + query);
 
 			if (!parseQuery(query, parameters)) {
 				he.sendResponseHeaders(400, -1);
@@ -61,15 +57,14 @@ public class Handlers {
 
 			JSONObject responseJSON = new JSONObject();
 			JSONObject dataJSON = new JSONObject();
-			System.out.println("Query: ");
-			System.out.println(parameters.get("query"));
+			System.out.println("Query: " + parameters.get("query"));
 
 			// process query
 			DocumentCursor list = null;
 			long start, end;
 			try {
 				String newQuery = eq.translateQuery(parameters.get("query"));
-				System.out.println(newQuery);
+				System.out.println("Changed Query: " + newQuery);
 				start = System.currentTimeMillis();
 				list = eq.executeQuery(qp, newQuery);
 				end = System.currentTimeMillis();
