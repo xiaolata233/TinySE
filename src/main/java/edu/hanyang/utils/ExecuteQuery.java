@@ -1,11 +1,15 @@
 package edu.hanyang.utils;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.TreeMap;
 
+import edu.hanyang.answer.TinySETokenizer;
 import edu.hanyang.indexer.BPlusTree;
 import edu.hanyang.indexer.DocumentCursor;
 import edu.hanyang.indexer.DocumentCursor.LIST_TYPE;
@@ -27,23 +31,80 @@ public class ExecuteQuery {
 	private TreeMap<String, Integer> termids = new TreeMap<String, Integer>();
 
 	public ExecuteQuery() throws Exception {
-		// Class<?> cls = Class.forName("edu.hanyang.submit.TinySEBPlusTree");
-		// tree = (BPlusTree) cls.newInstance();
-		tree = new edu.hanyang.indexer.TinySEBPlusTree();
+		Class<?> cls = Class.forName("edu.hanyang.answer.TinySEBPlusTree");
+		tree = (BPlusTree) cls.newInstance();
+		//		tree = new edu.hanyang.answer.AnswerBPlusTree();
 		tree.open("metapath", filepath + treeFilename, BLOCK_SIZE, 10);
 		stat = new InvidxStatAPI(this);
 
 		// load tree map
+
+		// make term to termid
+		FileReader fr = new FileReader("./termidMap.txt");
+		BufferedReader br = new BufferedReader(fr);
+		String line;
+		while ((line = br.readLine()) != null) {
+			String[] arr = line.split("\t");
+			termids.put(arr[0].trim(), Integer.valueOf(arr[1].trim()));
+		}
+		br.close();
+		fr.close();
 	}
 
 	public void close() {
-		// ...
+		tree.close();
 	}
 
-	// XXX: later --> web open
-	public String translateQuery(String query) {
-		// tokenize ->
-		return null;
+	public String translateQuery(String query) throws IOException {
+		TinySETokenizer obj = new TinySETokenizer();
+		obj.setup();
+		StringBuffer sb = new StringBuffer();
+
+		String[] queryWordArr = query.split(" ");
+		List<String> tokens = new ArrayList<>();
+		int termid;
+		boolean flag = true;
+		System.out.println(Arrays.toString(queryWordArr));
+		for (String word : queryWordArr) {
+			System.out.println(word);
+			String token = word;
+			if (token.contains("\"")) {
+				token = token.replace("\"", "");
+				tokens = obj.split(token);
+				token = tokens.get(0);
+				if (!termids.containsKey(token)) {
+					throw new IOException();
+				} else {
+					termid = termids.get(token);
+				}
+				if (flag) {
+					sb.append("\"");
+					sb.append(termid);
+					sb.append(" ");
+					flag = false;
+				} else {
+					sb.append(termid);
+					sb.append("\"");
+					sb.append(" ");
+					flag = true;
+				}
+			} else {
+				tokens = obj.split(token);
+				token = tokens.get(0);
+				if (!termids.containsKey(token)) {
+					throw new IOException();
+				} else {
+					termid = termids.get(token);
+				}
+				sb.append(termid);
+				sb.append(" ");
+			}
+		}
+		obj.clean();
+
+		System.out.println("Query" + sb.toString());
+
+		return sb.toString();
 	}
 
 	// qp:
@@ -62,7 +123,7 @@ public class ExecuteQuery {
 			if (node.left == null || node.right == null) {
 				throw new Exception("Invaild tree (a null child) : OP_AND is binary operation");
 			}
-			
+
 			DocumentCursor left = executeQuery(qp, node.left);
 			if (left.type == LIST_TYPE.POSLIST) {
 				throw new Exception("Operation Error (list type mismatching) : left result is positional");

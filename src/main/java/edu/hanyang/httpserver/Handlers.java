@@ -26,14 +26,14 @@ public class Handlers {
 	public static class EchoGetHandler implements HttpHandler {
 		private ExecuteQuery eq = null;
 		private QueryProcess qp = null;
-		
-		public EchoGetHandler (String dbname, String dbuser, String dbpass) throws Exception {
+
+		public EchoGetHandler(String dbname, String dbuser, String dbpass) throws Exception {
 			// connect db
 			MysqlTable.init_conn(dbname, dbuser, dbpass);
-			
+
 			// create query processor
 			eq = new ExecuteQuery();
-			
+
 			// load query processor class
 			Class<?> cls = Class.forName("edu.hanyang.submit.TinySEQueryProcess");
 			qp = (QueryProcess) cls.newInstance();
@@ -46,22 +46,24 @@ public class Handlers {
 			URI requestedUri = he.getRequestURI();
 			String query = requestedUri.getRawQuery();
 			he.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-			
-			if (! parseQuery(query, parameters)) {
-				he.sendResponseHeaders(400,-1);
+
+			System.out.println("row query: " + query);
+
+			if (!parseQuery(query, parameters)) {
+				he.sendResponseHeaders(400, -1);
 				he.close();
 				return;
 			}
-			
-//			String response = "";
-			
+
+			//			String response = "";
+
 			JSONObject responseJSON = new JSONObject();
 			JSONObject dataJSON = new JSONObject();
-			
+			System.out.println("Query: ");
 			System.out.println(parameters.get("query"));
-			
+
 			// process query
-			DocumentCursor list;
+			DocumentCursor list = null;
 			long start, end;
 			try {
 				start = System.currentTimeMillis();
@@ -69,44 +71,42 @@ public class Handlers {
 				System.out.println(newQuery);
 				list = eq.executeQuery(qp, newQuery);
 				end = System.currentTimeMillis();
+				dataJSON.put("time", (end - start) / 1000.0);
+				dataJSON.put("nDoc", list.get_doc_count());
+			} catch (IOException e) {
+				dataJSON.put("time", 0.0);
+				dataJSON.put("nDoc", 0);
 			} catch (Exception e) {
-				he.sendResponseHeaders(500,-1);
+				he.sendResponseHeaders(500, -1);
 				he.close();
 				return;
 			}
-			
-	        JSONArray list = new JSONArray();
-	        list.add("msg 1");
-	        list.add("msg 2");
-	        list.add("msg 3");
-			
+
 			// send response
 			List<String> docList = new ArrayList<>();
 			List<Integer> docID = new ArrayList<>();
-			while (! list.is_eol()) {
-				int docid = list.get_docid();
-				docID.add(docid);
-				String txt = MysqlTable.get_doc(docid);
-				
-				JSONObject obj = new JSONObject();
-		        obj.put("name", "mkyong.com");
-		        obj.put("age", new Integer(100));
-				
-				docList.add(txt);
-				list.go_next();
+			if (list != null) {
+				while (!list.is_eol()) {
+					int docid = list.get_docid();
+					docID.add(docid);
+					String txt = MysqlTable.get_doc(docid);
+
+					docList.add(txt);
+					list.go_next();
+				}
 			}
-			
-			dataJSON.put("time", (end - start)/1000.0);
-			dataJSON.put("nDoc", docList.size());
 			responseJSON.put("info", dataJSON.toJSONString());
-			for (int i =0;i<docList.size();i++) {
-//				response += key + " = " + parameters.get(key) + "\n";
-				responseJSON.put(docList.get(i), docID.get(i));
+
+			for (int i = 0; i < docList.size(); i++) {
+				//				response += key + " = " + parameters.get(key) + "\n";
+				responseJSON.put(docID.get(i), docList.get(i));
 			}
-			
+
 			he.sendResponseHeaders(200, responseJSON.toJSONString().length());
 			OutputStream os = he.getResponseBody();
-			
+
+			System.out.println("JSON" + responseJSON.toString());
+
 			os.write(responseJSON.toJSONString().getBytes());
 			os.close();
 		}
@@ -127,7 +127,7 @@ public class Handlers {
 
 				String key = null;
 				String value = null;
-				
+
 				try {
 					key = URLDecoder.decode(param[0], System.getProperty("file.encoding"));
 					value = URLDecoder.decode(param[1], System.getProperty("file.encoding"));
@@ -138,7 +138,7 @@ public class Handlers {
 				parameters.put(key, value);
 			}
 		}
-		
+
 		return true;
 	}
 }
