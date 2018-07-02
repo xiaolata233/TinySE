@@ -14,7 +14,7 @@ public class MysqlTable {
 		conn = DriverManager.getConnection("jdbc:mysql://" + dbhost + "/" + dbname, dbuser, dbpass);
 
 		// prepare statements
-		get_doc_stmt = conn.prepareStatement("select txt from docss where id=?");
+		get_doc_stmt = conn.prepareStatement("select txt from docs where id=?");
 	}
 	
 	public static void final_conn () throws Exception {
